@@ -37,7 +37,6 @@ services:
     networks:
       - internal
       - shared
-      - test
     volumes:
       - type: volume
         source: zksingle-ksingle_broker-data
@@ -49,10 +48,6 @@ networks:
   internal:
   shared:
     driver: bridge
-  test:
-      driver: bridge
-      driver_opts:
-        com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
 
 volumes:
   zksingle-ksingle_broker-data:
