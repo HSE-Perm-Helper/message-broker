@@ -2,6 +2,7 @@ version: '2'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.4
+    restart: always
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -22,18 +23,25 @@ services:
   
   kafka:
     image: confluentinc/cp-kafka:7.4.4
+    restart: always
     depends_on:
       - zookeeper
     expose:
-      - 9092
+      - "9092"
+    ports:
+      - 29092:29092
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://31.129.105.79:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:SASL_PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      ZOOKEEPER_SASL_ENABLED: 'false'
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
       KAFKA_AUTO_CREATE_TOPICS: true
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
     networks:
       - internal
       - shared
@@ -44,8 +52,24 @@ services:
       - type: volume
         source: zksingle-ksingle_broker-secrets
         target: /etc/kafka/secrets
+      - ./:/etc/kafka
+    kafka-admin:
+      image: obsidiandynamics/kafdrop
+      expose:
+        - 9000
+      environment:
+        - KAFKA_BROKERCONNECT=kafka:9092
+        - JVM_OPTS=-Xms32M -Xmx64M
+      depends_on:
+        - kafka
+      restart: always
+      networks:
+        - internal
+        - kafka-admin
 networks:
   internal:
+  kafka-admin:
+    driver: bridge
   shared:
     driver: bridge
 
