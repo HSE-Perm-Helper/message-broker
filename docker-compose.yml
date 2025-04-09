@@ -2,6 +2,7 @@ version: '2'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.4
+    user: "0:0"
     restart: always
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -22,7 +23,8 @@ services:
         target: /etc/zookeeper/secrets
   
   kafka:
-    image: confluentinc/cp-kafka:7.4.4
+    image: confluentinc/cp-kafka:latest
+    user: "0:0"
     restart: always
     depends_on:
       - zookeeper
@@ -45,6 +47,7 @@ services:
     networks:
       - internal
       - shared
+      - kafka-admin
     volumes:
       - type: volume
         source: zksingle-ksingle_broker-data
@@ -53,19 +56,19 @@ services:
         source: zksingle-ksingle_broker-secrets
         target: /etc/kafka/secrets
       - ./:/etc/kafka
-    kafka-admin:
-      image: obsidiandynamics/kafdrop
-      expose:
-        - 9000
-      environment:
-        - KAFKA_BROKERCONNECT=kafka:9092
-        - JVM_OPTS=-Xms32M -Xmx64M
-      depends_on:
-        - kafka
-      restart: always
-      networks:
-        - internal
-        - kafka-admin
+  kafka-admin:
+    image: obsidiandynamics/kafdrop
+    expose:
+    - 9000
+    environment:
+    - KAFKA_BROKERCONNECT=kafka:9092
+    - JVM_OPTS=-Xms32M -Xmx64M
+    depends_on:
+    - kafka
+    restart: always
+    networks:
+    - internal
+    - kafka-admin
 networks:
   internal:
   kafka-admin:
